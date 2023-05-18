@@ -16,6 +16,7 @@ import { useSqlNotes } from "./useSql";
 import { testPermissionErrorType, PermissionErrorScreen } from "./errors";
 import { NoteItem } from "./types";
 import { useState } from "react";
+import { NoteStoreProto } from "./proto/notestore";
 
 interface Preferences {
   accounts: boolean;
@@ -26,8 +27,30 @@ interface Preferences {
 
 const preferences: Preferences = getPreferenceValues();
 
+function getNoteBody(note: NoteItem): string {
+  if (note.noteBodyZipped) {
+    // const noteStore = NoteStoreProto.decode(note.noteBodyZipped);
+    // if (noteStore.document?.note?.noteText) {
+    //   return noteStore.document.note.noteText;
+    // }
+    return "There is a zipped body"
+  }
+
+  // if (note.snippet) {
+  //   return note.snippet;
+  // }
+
+  return "";
+}
+
 export default function Command() {
   const sqlState = useSqlNotes();
+  if (sqlState.results !== undefined && sqlState.results.length > 0) {
+    for (let i = 0; i < sqlState.results.length; i++) {
+      let body = getNoteBody(sqlState.results[i]);
+      console.log(body)
+    }
+  }
   const [failedToOpenMessage, setFailedToOpenMessage] = useState("");
 
   const escapeStringForAppleScript = (str: string) => str.replace('"', '\\"');

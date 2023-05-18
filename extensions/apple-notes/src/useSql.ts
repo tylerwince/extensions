@@ -82,7 +82,8 @@ const notesQuery = `
         datetime(modDate + 978307200, 'unixepoch') AS modifiedAt,
         snippet,
         accountName AS account,
-        UUID as UUID
+        UUID as UUID,
+        noteBodyZipped
     FROM (
         SELECT
             c.ztitle1 AS noteTitle,
@@ -91,14 +92,17 @@ const notesQuery = `
             c.z_pk AS xcoredataID,
             c.zaccount4 AS noteAccountID,
             c.zsnippet AS snippet,
-            c.zidentifier AS UUID
-        FROM
-            ziccloudsyncingobject AS c
-        WHERE
-            noteTitle IS NOT NULL AND
-            modDate IS NOT NULL AND
-            xcoredataID IS NOT NULL AND
-            c.zmarkedfordeletion != 1
+            c.zidentifier AS UUID,
+            n.zdata AS noteBodyZipped
+            FROM 
+                ziccloudsyncingobject AS c
+                INNER JOIN zicnotedata AS n ON c.znotedata = n.z_pk -- note id (int) distinct from xcoredataID
+            WHERE 
+                noteTitle IS NOT NULL AND 
+                modDate IS NOT NULL AND
+                xcoredataID IS NOT NULL AND
+                noteBodyZipped IS NOT NULL AND
+                c.zmarkedfordeletion != 1
     ) AS notes
     INNER JOIN (
         SELECT
