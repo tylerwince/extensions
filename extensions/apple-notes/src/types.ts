@@ -6,4 +6,5 @@ export interface NoteItem {
   folder: string;
   snippet: string;
   account: string;
+  noteZippedData: Uint8Array;
 }

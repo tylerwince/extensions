@@ -6,6 +6,7 @@ import { useRef, useState, useEffect } from "react";
 import initSqlJs, { Database, SqlJsStatic } from "sql.js";
 import { PermissionError } from "./errors";
 import { NoteItem } from "./types";
+import { NoteStoreProto } from "./proto/notestore";
 
 let SQL: SqlJsStatic;
 
@@ -17,6 +18,12 @@ const loadDatabase = async (path: string) => {
   const fileContents = await readFile(path);
   return new SQL.Database(fileContents);
 };
+
+// function getNoteBody(noteZippedData: Uint8Array): string {
+//   const note = NoteStoreProto.decode(noteZippedData);
+//   const noteBody = note.document?.note?.noteText ?? "";
+//   return noteBody;
+// }
 
 const useSql = <Result>(path: string, query: string) => {
   const databaseRef = useRef<Database>();
@@ -44,7 +51,13 @@ const useSql = <Result>(path: string, query: string) => {
         const newResults = new Array<Result>();
         const statement = databaseRef.current.prepare(query);
         while (statement.step()) {
-          newResults.push(statement.getAsObject() as unknown as Result);
+          let note = statement.getAsObject();
+          // let noteBody = "";
+          // if (note.hasOwnProperty("noteZippedData")) {
+          //   noteBody = getNoteBody(note.noteZippedData as Uint8Array);
+          //   console.log(noteBody);
+          // }
+          newResults.push(note as unknown as Result);
         }
 
         setResults(newResults);
@@ -73,7 +86,7 @@ const useSql = <Result>(path: string, query: string) => {
 };
 
 const NOTES_DB = resolve(homedir(), "Library/Group Containers/group.com.apple.notes/NoteStore.sqlite");
-
+console.log(NOTES_DB);
 const notesOCRQuery = `
     SELECT 
         CAST(znote AS TEXT) as noteID,
@@ -102,7 +115,8 @@ const notesQuery = `
         datetime(modDate + 978307200, 'unixepoch') AS modifiedAt,
         snippet,
         accountName AS account,
-        UUID as UUID
+        UUID as UUID,
+        noteBodyZipped AS noteZippedData
     FROM (
         SELECT
             c.ztitle1 AS noteTitle,
@@ -111,14 +125,18 @@ const notesQuery = `
             c.z_pk AS xcoredataID,
             c.zaccount4 AS noteAccountID,
             c.zsnippet AS snippet,
-            c.zidentifier AS UUID
-        FROM
-            ziccloudsyncingobject AS c
-        WHERE
-            noteTitle IS NOT NULL AND
-            modDate IS NOT NULL AND
-            xcoredataID IS NOT NULL AND
-            c.zmarkedfordeletion != 1
+            c.zidentifier AS UUID,
+            n.zdata AS noteBodyZipped
+    FROM 
+        ziccloudsyncingobject AS c
+        INNER JOIN zicnotedata AS n ON c.znotedata = n.z_pk -- note id (int) distinct from xcoredataID
+    WHERE 
+        noteTitle IS NOT NULL AND 
+        modDate IS NOT NULL AND
+        xcoredataID IS NOT NULL AND
+        noteBodyZipped IS NOT NULL AND
+        c.zmarkedfordeletion != 1
+
     ) AS notes
     INNER JOIN (
         SELECT

@@ -78,6 +78,7 @@
     "run-applescript": "^6.0.0",
     "sql.js": "^1.7.0",
     "sugar": "^2.0.6",
+    "ts-proto": "^1.147.3",
     "ts-protoc-gen": "^0.15.0"
   },
   "devDependencies": {
