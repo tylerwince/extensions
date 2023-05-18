@@ -74,6 +74,26 @@ const useSql = <Result>(path: string, query: string) => {
 
 const NOTES_DB = resolve(homedir(), "Library/Group Containers/group.com.apple.notes/NoteStore.sqlite");
 
+const notesOCRQuery = `
+    SELECT 
+        CAST(znote AS TEXT) as noteID,
+        IFNULL(GROUP_CONCAT(zhandwritingsummary, ''), '') || IFNULL(GROUP_CONCAT(zocrsummary, ''), '') as OCRText
+    FROM ziccloudsyncingobject
+    WHERE (zocrsummary IS NOT NULL OR
+          zhandwritingsummary IS NOT NULL) AND
+          zmarkedfordeletion != 1 
+    GROUP BY znote
+  `;
+
+const notesHashtagQuery = `
+    SELECT 
+        CAST(znote1 AS TEXT) as noteID,
+        GROUP_CONCAT(zalttext, ' ') as hashtags
+    FROM ziccloudsyncingobject
+    WHERE ztypeuti1 = 'com.apple.notes.inlinetextattachment.hashtag'
+    GROUP BY znote1
+  `;
+
 const notesQuery = `
     SELECT
         'x-coredata://' || z_uuid || '/ICNote/p' || xcoreDataID AS id,
